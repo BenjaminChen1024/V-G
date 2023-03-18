@@ -1,7 +1,7 @@
 # V-G
 Regulation strategies for electric vehicle-grid interaction
 
-![0](https://github.com/BenjaminChen1024/V-G/blob/master/V-G.png)
+![0](V-G.png)
 
 [![Author](https://img.shields.io/badge/Author-BenjaminChen-blue.svg "Author")](https://github.com/BenjaminChen1024 "Author")
 [![license](https://img.shields.io/github/license/:user/:repo.svg)](LICENSE)
