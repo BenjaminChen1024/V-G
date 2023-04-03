@@ -1,36 +1,36 @@
 clc; close all; clear;
-%% ¶¨ÒåÈ«¾Ö±äÁ¿
-global EV_params;   %µç¶¯Æû³µ²ÎÊı
-global BCS_params;  %³äµçÕ¾²ÎÊı
-global MC_params;   %MCÄ£Äâ²ÎÊı
-global Behavious;   %ÓÃ»§ĞĞÎª
-global Algorithm;   %ÓÅ»¯Ëã·¨
-global Result;      %½á¹û·ÖÎö
+%% å®šä¹‰å…¨å±€å˜é‡
+global EV_params;   %ç”µåŠ¨æ±½è½¦å‚æ•°
+global BCS_params;  %å……ç”µç«™å‚æ•°
+global MC_params;   %MCæ¨¡æ‹Ÿå‚æ•°
+global Behavious;   %ç”¨æˆ·è¡Œä¸º
+global Algorithm;   %ä¼˜åŒ–ç®—æ³•
+global Result;      %ç»“æœåˆ†æ
 
-%% ³õÊ¼»¯µç¶¯Æû³µ²ÎÊı£¨±ÈÑÇµÏ ËÎPro DM-i 110KM£©
-EV_params.Cap=18.3;          %µç³ØÈİÁ¿£¨kWh£©
-EV_params.NEDC=110;         %´¿µçĞøº½Àï³Ì£¨km£©
-EV_params.Consumption=0;    %ºÄµçÁ¿
-EV_params.minSOC=0.1;    %×îĞ¡ºÉµç×´Ì¬
-EV_params.Expected_Time=0;  %Ô¤ÆÚ³äµçÊ±¼ä
-EV_params.Expected_SOC=[];   %Ô¤ÆÚ³äµçºÉµç×´Ì¬
+%% åˆå§‹åŒ–ç”µåŠ¨æ±½è½¦å‚æ•°ï¼ˆæ¯”äºšè¿ª å®‹Pro DM-i 110KMï¼‰
+EV_params.Cap=18.3;          %ç”µæ± å®¹é‡ï¼ˆkWhï¼‰
+EV_params.NEDC=110;         %çº¯ç”µç»­èˆªé‡Œç¨‹ï¼ˆkmï¼‰
+EV_params.Consumption=0;    %è€—ç”µé‡
+EV_params.minSOC=0.1;    %æœ€å°è·ç”µçŠ¶æ€
+EV_params.Expected_Time=0;  %é¢„æœŸå……ç”µæ—¶é—´
+EV_params.Expected_SOC=[];   %é¢„æœŸå……ç”µè·ç”µçŠ¶æ€
 
-%% ³õÊ¼»¯³äµçÕ¾²ÎÊı£¨¹ãÖİÌØÀ´µç³äµçÕ¾-Ê¢´ó¹ú¼ÊÌØ»İ³äµçÕ¾£©
-BCS_params.nPiles=20;                   %³äµç×®ÊıÁ¿£¨¸ö£©
-BCS_params.DTF_PowerFactor=0.8;         %Åäµç±äÑ¹Æ÷¸ººÉ¹¦ÂÊÒòÊı
-BCS_params.DTF_Cap=200*5/0.8/0.85;      %Åäµç±äÑ¹Æ÷¶î¶¨ÈİÁ¿£¨kW£©(»§Êı*Ã¿»§ÓÃµçÁ¿/¹¦ÂÊÒòÊı/¸ººÉÂÊ£©
-BCS_params.RCP=7;                       %¶î¶¨³äµç¹¦ÂÊ£¨kW£©
-BCS_params.PowerFactor=0.9;             %³äµç¸ººÉ¹¦ÂÊÒòÊı
-BCS_params.P=BCS_params.RCP*BCS_params.PowerFactor;   %Êµ¼Ê³äµç¹¦ÂÊ£¨kW£©
-%% µç¼Û¼ÆËã£¨ÄÏ·½µçÍø£©
-BCS_params.GPrice=[1.215 0.726 0.293];  %µçÍø¹ºµçµç¼Û£¨·åÆ½¹È£©
+%% åˆå§‹åŒ–å……ç”µç«™å‚æ•°ï¼ˆå¹¿å·ç‰¹æ¥ç”µå……ç”µç«™-ç››å¤§å›½é™…ç‰¹æƒ å……ç”µç«™ï¼‰
+BCS_params.nPiles=20;                   %å……ç”µæ¡©æ•°é‡ï¼ˆä¸ªï¼‰
+BCS_params.DTF_PowerFactor=0.8;         %é…ç”µå˜å‹å™¨è´Ÿè·åŠŸç‡å› æ•°
+BCS_params.DTF_Cap=200*5/0.8/0.85;      %é…ç”µå˜å‹å™¨é¢å®šå®¹é‡ï¼ˆkWï¼‰(æˆ·æ•°*æ¯æˆ·ç”¨ç”µé‡/åŠŸç‡å› æ•°/è´Ÿè·ç‡ï¼‰
+BCS_params.RCP=7;                       %é¢å®šå……ç”µåŠŸç‡ï¼ˆkWï¼‰
+BCS_params.PowerFactor=0.9;             %å……ç”µè´Ÿè·åŠŸç‡å› æ•°
+BCS_params.P=BCS_params.RCP*BCS_params.PowerFactor;   %å®é™…å……ç”µåŠŸç‡ï¼ˆkWï¼‰
+%% ç”µä»·è®¡ç®—ï¼ˆå—æ–¹ç”µç½‘ï¼‰
+BCS_params.GPrice=[1.215 0.726 0.293];  %ç”µç½‘è´­ç”µç”µä»·ï¼ˆå³°å¹³è°·ï¼‰
 BCS_params.TOU_EPrice_Hour=[
     0.726 0.726 1.215 1.215 1.215 1.215 ...
     1.215 0.726 0.726 0.726 0.726 0.726 ...
     0.293 0.293 0.293 0.293 0.293 0.293 ...
     0.293 0.293 0.726 0.726 1.215 1.215
-];  %·ÖÊ±µç¼Û£¨12µã¿ªÊ¼£©£¨¸ß·åÊ±¶ÎÎª10-12µã¡¢14-19µã£»µÍ¹ÈÊ±¶ÎÎª0-8µã£»ÆäÓàÊ±¶ÎÎªÆ½¶Î£»·åÆ½¹È±È¼ÛÎª1.7:1:0.38£©
-BCS_params.TOU_EPrice_Min=zeros(1,96);  %·ÖÊ±¶Îµç¼Û
+];  %åˆ†æ—¶ç”µä»·ï¼ˆ12ç‚¹å¼€å§‹ï¼‰ï¼ˆé«˜å³°æ—¶æ®µä¸º10-12ç‚¹ã€14-19ç‚¹ï¼›ä½è°·æ—¶æ®µä¸º0-8ç‚¹ï¼›å…¶ä½™æ—¶æ®µä¸ºå¹³æ®µï¼›å³°å¹³è°·æ¯”ä»·ä¸º1.7:1:0.38ï¼‰
+BCS_params.TOU_EPrice_Min=zeros(1,96);  %åˆ†æ—¶æ®µç”µä»·
 for i=1:95
     BCS_params.TOU_EPrice_Min(i)=BCS_params.TOU_EPrice_Hour(floor(i/4)+1);
     if floor((i-1)/4)<floor(i/4)
@@ -38,14 +38,14 @@ for i=1:95
     end
 end
 BCS_params.TOU_EPrice_Min(96)=BCS_params.TOU_EPrice_Hour(24);
-BCS_params.EPrice=1.72;  %³äµçµç¼Û£¨Ôª£©
+BCS_params.EPrice=1.72;  %å……ç”µç”µä»·ï¼ˆå…ƒï¼‰
 
-%% ³õÊ¼»¯MCÄ£Äâ²ÎÊı
-MC_params.all_day=1;            %Ä£ÄâÌìÊı
-MC_params.periods_per_day=96;   %Ò»Ìì»®·ÖÎªÈô¸ÉÊ±¶ÎÊı
+%% åˆå§‹åŒ–MCæ¨¡æ‹Ÿå‚æ•°
+MC_params.all_day=1;            %æ¨¡æ‹Ÿå¤©æ•°
+MC_params.periods_per_day=96;   %ä¸€å¤©åˆ’åˆ†ä¸ºè‹¥å¹²æ—¶æ®µæ•°
 MC_params.periods_Hour=0.25;
 MC_params.periods_Min=15;
-MC_params.nEVs=250;             %µç¶¯Æû³µÊıÁ¿
+MC_params.nEVs=250;             %ç”µåŠ¨æ±½è½¦æ•°é‡
 MC_params.nEVs_Count=0;
 MC_params.nEVs_Count_ALL=0;
 MC_params.nEVs_Count_Time=zeros(1,MC_params.periods_per_day);
@@ -53,28 +53,28 @@ MC_params.nEVs_StartTime=zeros(1,MC_params.nEVs);
 MC_params.nEVs_SOC=zeros(1,MC_params.nEVs);
 MC_params.nEVs_SOC_Time=zeros(MC_params.periods_per_day,MC_params.nEVs);
 MC_params.nEVs_EChargeTime=zeros(1,MC_params.nEVs);
-MC_params.J_max=0;              %×î´óÊ±¼ä¶ÎÊı
-MC_params.nEVs_No=0;            %µç¶¯Æû³µ±àºÅ
-MC_params.nEVs_No_Count=0;      %µç¶¯Æû³µ±àºÅ¼ÆÊı
+MC_params.J_max=0;              %æœ€å¤§æ—¶é—´æ®µæ•°
+MC_params.nEVs_No=0;            %ç”µåŠ¨æ±½è½¦ç¼–å·
+MC_params.nEVs_No_Count=0;      %ç”µåŠ¨æ±½è½¦ç¼–å·è®¡æ•°
 MC_params.Y=zeros(BCS_params.nPiles,1);
-MC_params.S=zeros(BCS_params.nPiles,MC_params.periods_per_day); %³äµçÕ¾×´Ì¬¾ØÕó
-MC_params.C=zeros(BCS_params.nPiles,MC_params.periods_per_day); %³äµçÕ¾×´Ì¬¾ØÕó
+MC_params.S=zeros(BCS_params.nPiles,MC_params.periods_per_day); %å……ç”µç«™çŠ¶æ€çŸ©é˜µ
+MC_params.C=zeros(BCS_params.nPiles,MC_params.periods_per_day); %å……ç”µç«™çŠ¶æ€çŸ©é˜µ
 MC_params.C_ALL=zeros(BCS_params.nPiles,MC_params.periods_per_day);
 MC_params.V0G_ChargeLoad=zeros(1,MC_params.periods_per_day*2);
 MC_params.ChargeLoad=zeros(1,MC_params.periods_per_day*2);
 MC_params.A=ones(MC_params.periods_per_day,1);
 MC_params.B=ones(1,MC_params.periods_per_day);
 
-%% ¼ÆËãÊµ¼Ê³äµç¹¦ÂÊ
+%% è®¡ç®—å®é™…å……ç”µåŠŸç‡
 Behavious.ConventionalLoad_Hour=[
     1426.39 1445.58 1426.39 1416.39 1426.39 1491.22 ...
     1512.84 1523.64 1512.84 1426.39 1399.37 1275.10 ...
     1188.66 1048.18 832.06 780.22 768.64 812.06 884.48 ...
     1069.70 1170.66 1275.10 1404.78 1426.39 1426.39
-    ];  %´Ó12µã¿ªÊ¼Ã¿Ğ¡Ê±³£¹æ¸ººÉ
-Behavious.ConventionalLoad_Hour=BCS_params.DTF_PowerFactor*Behavious.ConventionalLoad_Hour; %Êµ¼Ê³£¹æ¸ººÉ
-BCS_params.CP_TFCap_ratio=zeros(1,96);  %³äµç¹¦ÂÊÕ¼±äÑ¹Æ÷ÈİÁ¿µÄ±ÈÀı
-for i=1:MC_params.periods_per_day   %24Ğ¡Ê±¾Ö²¿ÏßĞÔ»¯Îª96¸öÊ±¶Î
+    ];  %ä»12ç‚¹å¼€å§‹æ¯å°æ—¶å¸¸è§„è´Ÿè·
+Behavious.ConventionalLoad_Hour=BCS_params.DTF_PowerFactor*Behavious.ConventionalLoad_Hour; %å®é™…å¸¸è§„è´Ÿè·
+BCS_params.CP_TFCap_ratio=zeros(1,96);  %å……ç”µåŠŸç‡å å˜å‹å™¨å®¹é‡çš„æ¯”ä¾‹
+for i=1:MC_params.periods_per_day   %24å°æ—¶å±€éƒ¨çº¿æ€§åŒ–ä¸º96ä¸ªæ—¶æ®µ
     Behavious.FirstConventionalLoad=Behavious.ConventionalLoad_Hour(floor((i-1)/4)+1)/BCS_params.DTF_Cap;
     Behavious.SecondConventionalLoad=Behavious.ConventionalLoad_Hour(floor((i-1)/4)+2)/BCS_params.DTF_Cap;
     if(rem(i,4)==1)
@@ -87,47 +87,47 @@ for i=1:MC_params.periods_per_day   %24Ğ¡Ê±¾Ö²¿ÏßĞÔ»¯Îª96¸öÊ±¶Î
         BCS_params.CP_TFCap_ratio(i)=Behavious.FirstConventionalLoad+3*(Behavious.SecondConventionalLoad-Behavious.FirstConventionalLoad)/4;
     end
 end
-Behavious.ConventionalLoad_Min=BCS_params.DTF_Cap*BCS_params.CP_TFCap_ratio;  %96Ê±¶Î³£¹æ¸ººÉ
-Behavious.CP_max=(BCS_params.DTF_Cap*MC_params.B-Behavious.ConventionalLoad_Min)*BCS_params.DTF_PowerFactor;     %Êµ¼Ê×î´ó³äµç¸ººÉ
+Behavious.ConventionalLoad_Min=BCS_params.DTF_Cap*BCS_params.CP_TFCap_ratio;  %96æ—¶æ®µå¸¸è§„è´Ÿè·
+Behavious.CP_max=(BCS_params.DTF_Cap*MC_params.B-Behavious.ConventionalLoad_Min)*BCS_params.DTF_PowerFactor;     %å®é™…æœ€å¤§å……ç”µè´Ÿè·
 
-%% µç¶¯Æû³µMCÄ£Äâ
-for t=1:MC_params.periods_per_day   %´ÓÖĞÎç12µã¿ªÊ¼¼ÆËã(´ÓµÚ50¸öÊ±¶Î¿ªÊ¼¼ÆËã), 12.25ÎªµÚÒ»¸öÊ±¼ä¶Î
+%% ç”µåŠ¨æ±½è½¦MCæ¨¡æ‹Ÿ
+for t=1:MC_params.periods_per_day   %ä»ä¸­åˆ12ç‚¹å¼€å§‹è®¡ç®—(ä»ç¬¬50ä¸ªæ—¶æ®µå¼€å§‹è®¡ç®—), 12.25ä¸ºç¬¬ä¸€ä¸ªæ—¶é—´æ®µ
     Behavious.StartTime=12.25+0.25*(t-1);
-    % ÆğÊ¼³äµçÊ±¼äÓë³µÁ¾ÊıµÄMCÄ£Äâ
+    % èµ·å§‹å……ç”µæ—¶é—´ä¸è½¦è¾†æ•°çš„MCæ¨¡æ‹Ÿ
     if Behavious.StartTime>24
         Behavious.StartTime=Behavious.StartTime-24;
     end
-    Behavious.StartTime_us=17.6;    %ÆğÊ¼³äµçÊ±¼ä¸ÅÂÊÃÜ¶Èº¯ÊıÆÚÍû
-    Behavious.StartTime_ds=3.4;     %ÆğÊ¼³äµçÊ±¼ä¸ÅÂÊÃÜ¶Èº¯Êı±ê×¼²î
-    %ÆğÊ¼³äµçÊ±¼ä¸ÅÂÊÃÜ¶Èº¯Êı
+    Behavious.StartTime_us=17.6;    %èµ·å§‹å……ç”µæ—¶é—´æ¦‚ç‡å¯†åº¦å‡½æ•°æœŸæœ›
+    Behavious.StartTime_ds=3.4;     %èµ·å§‹å……ç”µæ—¶é—´æ¦‚ç‡å¯†åº¦å‡½æ•°æ ‡å‡†å·®
+    %èµ·å§‹å……ç”µæ—¶é—´æ¦‚ç‡å¯†åº¦å‡½æ•°
     if Behavious.StartTime>(Behavious.StartTime_us-12)
         Behavious.StartTime_fs=@(x)1/(Behavious.StartTime_ds*(2*pi)^0.5).*exp(-(x-Behavious.StartTime_us).^2./(2*Behavious.StartTime_ds^2)); %(us-12)<x<=24
     else
         Behavious.StartTime_fs=@(x)1/(Behavious.StartTime_ds*(2*pi)^0.5).*exp(-(x+24-Behavious.StartTime_us).^2./(2*Behavious.StartTime_ds^2)); %0<x<=(us-12)
     end
-    Behavious.s_ts=integral(Behavious.StartTime_fs,Behavious.StartTime-0.25,Behavious.StartTime);  %0.25Ğ¡Ê±Ê±¶ÎÄÚµÄ¸ÅÂÊ
-    MC_params.nEVs_Count=round(Behavious.s_ts*MC_params.nEVs);  %¸ÃÊ±¶Î½ÓÈëµÄµç¶¯Æû³µÊıÁ¿
+    Behavious.s_ts=integral(Behavious.StartTime_fs,Behavious.StartTime-0.25,Behavious.StartTime);  %0.25å°æ—¶æ—¶æ®µå†…çš„æ¦‚ç‡
+    MC_params.nEVs_Count=round(Behavious.s_ts*MC_params.nEVs);  %è¯¥æ—¶æ®µæ¥å…¥çš„ç”µåŠ¨æ±½è½¦æ•°é‡
     MC_params.nEVs_Count_Time(t)=MC_params.nEVs_Count;
     MC_params.nEVs_Count_ALL=MC_params.nEVs_Count_ALL+MC_params.nEVs_Count;
 
     for i=1:MC_params.nEVs_Count
-        %% ³õÊ¼SOCµÄMCÄ£Äâ
-        Behavious.StartSOC_ud=3.2;      %³õÊ¼SOC¸ÅÂÊÃÜ¶Èº¯ÊıÆÚÍû
-        Behavious.StartSOC_dd=0.88;     %³õÊ¼SOC¸ÅÂÊÃÜ¶Èº¯Êı±ê×¼²î
-        %³õÊ¼SOC¸ÅÂÊÃÜ¶Èº¯Êı
+        %% åˆå§‹SOCçš„MCæ¨¡æ‹Ÿ
+        Behavious.StartSOC_ud=3.2;      %åˆå§‹SOCæ¦‚ç‡å¯†åº¦å‡½æ•°æœŸæœ›
+        Behavious.StartSOC_dd=0.88;     %åˆå§‹SOCæ¦‚ç‡å¯†åº¦å‡½æ•°æ ‡å‡†å·®
+        %åˆå§‹SOCæ¦‚ç‡å¯†åº¦å‡½æ•°
         Behavious.StartSOC=0.9-15*lognrnd(Behavious.StartSOC_ud,Behavious.StartSOC_dd)/(100*EV_params.Cap);
         while Behavious.StartSOC<0.1 || Behavious.StartSOC>=0.3
             Behavious.StartSOC=0.9-15*lognrnd(Behavious.StartSOC_ud,Behavious.StartSOC_dd)/(100*EV_params.Cap);
         end
         Behavious.StartSOC=fix(Behavious.StartSOC*100)/100;
-        % Ô¤ÆÚ³äµçÊ±¼äÊ±¼äµÄMCÄ£Äâ
-        %Ô¤ÆÚ³äµçÊ±¼ä¸ÅÂÊÃÜ¶Èº¯Êı
+        % é¢„æœŸå……ç”µæ—¶é—´æ—¶é—´çš„MCæ¨¡æ‹Ÿ
+        %é¢„æœŸå……ç”µæ—¶é—´æ¦‚ç‡å¯†åº¦å‡½æ•°
         Behavious.EChargeTime_Hour=2+6*rand(1);
         while Behavious.EChargeTime_Hour>=8 || Behavious.EChargeTime_Hour<=2
             Behavious.EChargeTime_Hour=8*rand(1);
         end
         Behavious.EChargeTime_Min=ceil((Behavious.EChargeTime_Hour*60)/15);
-        %ÅĞ¶ÏÊÇ·ñÄÜÔÚÔ¤¶¨³äµçÊ±¼äÄÚ´ïµ½ËùĞè×îÖÕºÉµç×´Ì¬
+        %åˆ¤æ–­æ˜¯å¦èƒ½åœ¨é¢„å®šå……ç”µæ—¶é—´å†…è¾¾åˆ°æ‰€éœ€æœ€ç»ˆè·ç”µçŠ¶æ€
 %         if (0.25*Behavious.EChargeTime_Min*BCS_params.P>((0.9-Behavious.StartSOC)*EV_params.Cap))
             MC_params.nEVs_No=MC_params.nEVs_No+1;
             MC_params.nEVs_StartTime(1,MC_params.nEVs_No_Count+MC_params.nEVs_No)=t;
@@ -148,10 +148,10 @@ MC_params.nEVs_EChargeTime((MC_params.nEVs_No_Count+1):MC_params.nEVs)=[];
 MC_params.nEVs_CSOC_min=0.9*ones(MC_params.nEVs_No_Count,1);
 MC_params.nEVs_CSOC_max=ones(MC_params.nEVs_No_Count,1);
 
-%% ÎŞĞò³äµç¸ººÉÇúÏß
-MC_params.nEVs_Consumption_Time=sum(MC_params.nEVs_Consumption,2)';         %¸÷Ê±¶Î×Üµç¶¯Æû³µºÄµçÁ¿
-MC_params.nEVs_ChargeTime=sum(MC_params.nEVs_Consumption)./BCS_params.P;    %¸÷µç¶¯Æû³µ³äµçÊ±¼ä
-MC_params.nEVs_ChargeTime=ceil((MC_params.nEVs_ChargeTime*60)/15);          %24Ğ¡Ê±×ª»»³É15·ÖÖÓ
+%% æ— åºå……ç”µè´Ÿè·æ›²çº¿
+MC_params.nEVs_Consumption_Time=sum(MC_params.nEVs_Consumption,2)';         %å„æ—¶æ®µæ€»ç”µåŠ¨æ±½è½¦è€—ç”µé‡
+MC_params.nEVs_ChargeTime=sum(MC_params.nEVs_Consumption)./BCS_params.P;    %å„ç”µåŠ¨æ±½è½¦å……ç”µæ—¶é—´
+MC_params.nEVs_ChargeTime=ceil((MC_params.nEVs_ChargeTime*60)/15);          %24å°æ—¶è½¬æ¢æˆ15åˆ†é’Ÿ
 for i=1:MC_params.nEVs_No_Count
     if MC_params.nEVs_StartTime(i)==0
         MC_params.nEVs_StartTime(i)=MC_params.periods_per_day;
@@ -165,27 +165,27 @@ for t=1:MC_params.periods_per_day
         MC_params.V0G_ChargeLoad(t)=BCS_params.nPiles*BCS_params.RCP;
     end
 end
-MC_params.V0G_ChargeLoad=MC_params.V0G_ChargeLoad(1:96)+MC_params.V0G_ChargeLoad(97:192);   %µç¶¯Æû³µÎŞĞò³äµç¸ººÉ
+MC_params.V0G_ChargeLoad=MC_params.V0G_ChargeLoad(1:96)+MC_params.V0G_ChargeLoad(97:192);   %ç”µåŠ¨æ±½è½¦æ— åºå……ç”µè´Ÿè·
 
-%% ³äµçÕ¾ÓĞĞò³äµçÄ£Äâ
+%% å……ç”µç«™æœ‰åºå……ç”µæ¨¡æ‹Ÿ
 tic
 for t=1:MC_params.periods_per_day
-    % Ô¤¸üĞÂ³äµçÕ¾Æû³µ³äµç×´Ì¬
+    % é¢„æ›´æ–°å……ç”µç«™æ±½è½¦å……ç”µçŠ¶æ€
     MC_params.S(:,1)=0;
     MC_params.S=circshift(MC_params.S,-1,2);
-    % Ô¤¸üĞÂ³äµçÕ¾Æû³µ¿ØÖÆ²ßÂÔ
+    % é¢„æ›´æ–°å……ç”µç«™æ±½è½¦æ§åˆ¶ç­–ç•¥
     MC_params.C(:,1)=0;
     MC_params.C=circshift(MC_params.C,-1,2);
-    % ÅĞ¶ÏÊÇ·ñÓĞĞÂ³µ½ÓÈë
+    % åˆ¤æ–­æ˜¯å¦æœ‰æ–°è½¦æ¥å…¥
     MC_params.EV_index=find(MC_params.nEVs_StartTime==t);
     if ~isempty(MC_params.EV_index)
-        % ¼ÇÂ¼µç¶¯Æû³µSOCºÍÔ¤ÆÚ³äµçÊ±¼ä
+        % è®°å½•ç”µåŠ¨æ±½è½¦SOCå’Œé¢„æœŸå……ç”µæ—¶é—´
         MC_params.EV_Count=numel(MC_params.EV_index);
         MC_params.EV_SOC=MC_params.nEVs_SOC(MC_params.EV_index);
         MC_params.EV_EChargeTime=MC_params.nEVs_EChargeTime(MC_params.EV_index);
-        % È·¶¨¿ØÖÆÊ±¼ä¶ÎÊı
+        % ç¡®å®šæ§åˆ¶æ—¶é—´æ®µæ•°
         MC_params.J_max=max([MC_params.EV_EChargeTime,MC_params.J_max]);
-        % ¸üĞÂ³äµçÕ¾×´Ì¬·½³Ì
+        % æ›´æ–°å……ç”µç«™çŠ¶æ€æ–¹ç¨‹
         for n=1:BCS_params.nPiles
             if MC_params.S(n,1)==0
                 MC_params.S(n,1:MC_params.EV_EChargeTime(MC_params.EV_Count))=1;
@@ -196,18 +196,18 @@ for t=1:MC_params.periods_per_day
                 break;
             end
         end
-        % ¸üĞÂ³äµç×®¶ÔÓ¦µç¶¯Æû³µSOCÊı¾İ
+        % æ›´æ–°å……ç”µæ¡©å¯¹åº”ç”µåŠ¨æ±½è½¦SOCæ•°æ®
         for n=1:BCS_params.nPiles
             if MC_params.S(n,1)==0
                 MC_params.Y(n,1)=0;
             end
         end
         MC_params.SC=MC_params.S(:,1:MC_params.J_max);
-        % ÓÅ»¯²ßÂÔ
+        % ä¼˜åŒ–ç­–ç•¥
         yalmip('clear');
-        % ¶¨Òå¾ØÕó
+        % å®šä¹‰çŸ©é˜µ
         MC_params.X=sdpvar(BCS_params.nPiles,MC_params.J_max);
-        % Ô¼ÊøÌõ¼ş
+        % çº¦æŸæ¡ä»¶
         Algorithm.Constraints=[];
         for j=1:MC_params.J_max
             if (t+j-1)<=MC_params.periods_per_day
@@ -222,13 +222,13 @@ for t=1:MC_params.periods_per_day
                 Algorithm.Constraints=[Algorithm.Constraints,(BCS_params.P*MC_params.periods_Hour*sum(MC_params.X(n,:).*MC_params.SC(n,:))+EV_params.Cap*MC_params.Y(n,1))<=EV_params.Cap*MC_params.nEVs_CSOC_max];
             end
         end
-        % ¶¨Òå¶ÔÏó
+        % å®šä¹‰å¯¹è±¡
         Algorithm.Objective=BCS_params.RCP*MC_params.periods_Hour*sum(sum(MC_params.X.*MC_params.SC).*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min(t)));
-        % ÎªYALMIPÇó½âÆ÷ÉèÖÃÑ¡Ïî
+        % ä¸ºYALMIPæ±‚è§£å™¨è®¾ç½®é€‰é¡¹
         Algorithm.options = sdpsettings('solver','cplex','verbose',1);
-        % ÓÅ»¯Ä£ĞÍ
+        % ä¼˜åŒ–æ¨¡å‹
         Algorithm.sol = optimize(Algorithm.Constraints,Algorithm.Objective,Algorithm.options);
-        % ·ÖÎö´íÎó
+        % åˆ†æé”™è¯¯
         if Algorithm.sol.problem == 0
             Algorithm.solution = double(MC_params.S);
         else
@@ -244,17 +244,17 @@ for t=1:MC_params.periods_per_day
 end
 toc
 
-%% Êı¾İ·ÖÎö
+%% æ•°æ®åˆ†æ
 Result.xaxis=0:0.25:23.75;
-Result.TOU_EPrice=BCS_params.TOU_EPrice_Min;                %·ÖÊ±µç¼Û
-Result.EPrice=BCS_params.EPrice*MC_params.B;                %³äµçµç¼Û
-Result.ConventionalLoad=Behavious.ConventionalLoad_Min;     %³£¹æ¸ººÉ
-Result.nEVs_Count=MC_params.nEVs_Count_Time;                %¸÷Ê±¶Î½ÓÈë³µÁ¾Êı
-Result.nEVs_StartTime=MC_params.nEVs_StartTime;             %ÆğÊ¼³äµçÊ±¼ä
-Result.nEVs_SOC=MC_params.nEVs_SOC;                         %³õÊ¼SOC
-Result.nEVs_EChargeTime=MC_params.nEVs_EChargeTime;         %Ô¤ÆÚÍ£ÁôÊ±¼ä
-Result.DTF_Cap=BCS_params.DTF_Cap*MC_params.B;              %Åäµç±äÑ¹Æ÷¶î¶¨ÈİÁ¿
-Result.CP_max=Behavious.CP_max;                             %Êµ¼Ê×î´ó³äµç¸ººÉ
+Result.TOU_EPrice=BCS_params.TOU_EPrice_Min;                %åˆ†æ—¶ç”µä»·
+Result.EPrice=BCS_params.EPrice*MC_params.B;                %å……ç”µç”µä»·
+Result.ConventionalLoad=Behavious.ConventionalLoad_Min;     %å¸¸è§„è´Ÿè·
+Result.nEVs_Count=MC_params.nEVs_Count_Time;                %å„æ—¶æ®µæ¥å…¥è½¦è¾†æ•°
+Result.nEVs_StartTime=MC_params.nEVs_StartTime;             %èµ·å§‹å……ç”µæ—¶é—´
+Result.nEVs_SOC=MC_params.nEVs_SOC;                         %åˆå§‹SOC
+Result.nEVs_EChargeTime=MC_params.nEVs_EChargeTime;         %é¢„æœŸåœç•™æ—¶é—´
+Result.DTF_Cap=BCS_params.DTF_Cap*MC_params.B;              %é…ç”µå˜å‹å™¨é¢å®šå®¹é‡
+Result.CP_max=Behavious.CP_max;                             %å®é™…æœ€å¤§å……ç”µè´Ÿè·
 Result.V0G_ChargeLoad=MC_params.V0G_ChargeLoad;
 Result.V0G_Load_ALL=Behavious.ConventionalLoad_Min+Result.V0G_ChargeLoad;
 Result.V0G_Income=Result.V0G_ChargeLoad.*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min);
@@ -263,26 +263,26 @@ Result.C=sum(MC_params.C_ALL);
 Result.V1G_ChargeLoad=BCS_params.P*Result.C;
 Result.V1G_Load_ALL=Behavious.ConventionalLoad_Min+Result.V1G_ChargeLoad;
 Result.V1G_Income=Result.V1G_ChargeLoad.*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min);
-Result.V1G_Income_ALL=MC_params.B*sum(Result.V1G_ChargeLoad.*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min));
+Result.V1G_Income_ALL=sum(Result.V1G_ChargeLoad.*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min));
 
-figure(1)
-tiledlayout(2,2)
-% ±äµçÕ¾¹ºµçµç¼ÛÓë³äµãµç¼ÛÇúÏß
+
+tiledlayout(2,3)
+% å˜ç”µç«™è´­ç”µç”µä»·ä¸å……ç‚¹ç”µä»·æ›²çº¿
 nexttile
 hold on
-title("³äµçÕ¾¹ºµçµç¼ÛÓë³äµçµç¼ÛÇúÏß")
+title("å˜ç”µç«™è´­ç”µç”µä»·ä¸å……ç‚¹ç”µä»·æ›²çº¿")
 stairs(Result.xaxis,Result.TOU_EPrice,'LineWidth',2,'Color',[0 0 0]);
 stairs(Result.xaxis,Result.EPrice,'LineWidth',2,'Color',[1 0 0]);
 set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
 set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
 xlabel('Time/h');
-ylabel('Price/£¤');
+ylabel('Price/ï¿¥');
 legend('TOU Electricity Price','Charging Price');
 hold off
-% ¸÷Ê±¶Î³äµçÕ¾½ÓÈëµç¶¯Æû³µÊıÁ¿
+% å„æ—¶æ®µå……ç”µç«™æ¥å…¥ç”µåŠ¨æ±½è½¦æ•°é‡
 nexttile
 hold on
-title("¸÷Ê±¶Î³äµçÕ¾½ÓÈëµç¶¯Æû³µÊıÁ¿")
+title("å„æ—¶æ®µå……ç”µç«™æ¥å…¥ç”µåŠ¨æ±½è½¦æ•°é‡")
 stairs(Result.xaxis,Result.nEVs_Count,'LineWidth',2,'Color',[0 0 0]);
 set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
 set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
@@ -290,57 +290,24 @@ xlabel('Time/h');
 ylabel('Count');
 legend('Count of EV');
 hold off
-% ÓĞĞò³äµçÓëÎŞĞò³äµçÈÕÊÕÒæ
+% æœ‰åºå……ç”µä¸æ— åºå……ç”µæ”¶ç›Š
 nexttile
 hold on
-title("ÓĞĞò³äµçÓëÎŞĞò³äµçÈÕÊÕÒæ")
+title("æœ‰åºå……ç”µä¸æ— åºå……ç”µæ”¶ç›Š")
+plot(Result.xaxis,Result.V0G_Income,'LineWidth',2,'Color',[0 0 1]);
 plot(Result.xaxis,Result.V0G_Income_ALL,'LineWidth',2,'Color',[0 0 1]);
+plot(Result.xaxis,Result.V1G_Income,'LineWidth',2,'Color',[0 1 0]);
 plot(Result.xaxis,Result.V1G_Income_ALL,'LineWidth',2,'Color',[0 1 0]);
 set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
 set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
 xlabel('Time/h');
-ylabel('Income/£¤');
-legend('V0G Daily Income','V1G Daily Income');
+ylabel('Income/ï¿¥');
+legend('V0G Income','V0G Daily Income','V1G Income','V1G Daily Income');
 hold off
-% ÓĞĞò³äµçÓëÎŞĞò³äµçÊÕÒæ
+% æœ‰åºå……ç”µä¸æ— åºå……ç”µè´Ÿè·æ›²çº¿
 nexttile
 hold on
-title("ÓĞĞò³äµçÓëÎŞĞò³äµç¸÷Ê±¶ÎÊÕÒæ")
-plot(Result.xaxis,Result.V0G_Income,'LineWidth',2,'Color',[0 0 1]);
-plot(Result.xaxis,Result.V1G_Income,'LineWidth',2,'Color',[0 1 0]);
-set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
-set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
-xlabel('Time/h');
-ylabel('Income/£¤');
-legend('V0G Income','V1G Income');
-hold off
-
-figure(2)
-tiledlayout(2,2)
-% µç¶¯Æû³µ³õÊ¼SOC·Ö²¼
-nexttile
-hold on
-title("µç¶¯Æû³µ³õÊ¼SOC·Ö²¼")
-plot(MC_params.nEVs_SOC,'*','Color',[0 0 1]);
-xlabel('No.');
-ylabel('SOC');
-xlim([0 250]);
-ylim([0 1]);
-hold off
-% µç¶¯Æû³µÔ¤ÆÚ³äµçÊ±¼ä·Ö²¼
-nexttile
-hold on
-title("µç¶¯Æû³µÔ¤ÆÚ³äµçÊ±¼ä·Ö²¼")
-plot(MC_params.nEVs_EChargeTime,'*','Color',[0 0 1]);
-xlabel('No.');
-ylabel('Time/15min');
-xlim([0 250]);
-ylim([0 50]);
-hold off
-% ÓĞĞò³äµçÓëÎŞĞò³äµç¸ººÉÇúÏß
-nexttile
-hold on
-title("ÓĞĞò³äµçÓëÎŞĞò³äµç¸ººÉÇúÏß")
+title("æœ‰åºå……ç”µä¸æ— åºå……ç”µè´Ÿè·æ›²çº¿")
 plot(Result.xaxis,Result.CP_max,'LineWidth',2,'Color',[1 0 0]);
 plot(Result.xaxis,Result.V0G_ChargeLoad,'LineWidth',2,'Color',[0 0 1]);
 plot(Result.xaxis,Result.V1G_ChargeLoad,'LineWidth',2,'Color',[0 1 0]);
@@ -350,10 +317,10 @@ xlabel('Time/h');
 ylabel('Load/kW');
 legend('Max Charge Load','V0G Charge Load','V1G Charge Load');
 hold off
-% ×Ü¸ººÉÇúÏß
+% æ€»è´Ÿè·æ›²çº¿
 nexttile
 hold on
-title("×Ü¸ººÉÇúÏß")
+title("æ€»è´Ÿè·æ›²çº¿")
 plot(Result.xaxis,Result.DTF_Cap,'LineWidth',2,'Color',[1 0 0]);
 plot(Result.xaxis,Result.ConventionalLoad,'LineWidth',2,'Color',[0 0 0]);
 plot(Result.xaxis,Result.V0G_Load_ALL,'LineWidth',2,'Color',[0 0 1]);
