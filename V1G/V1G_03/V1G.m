@@ -1,0 +1,315 @@
+clc; close all; clear;
+%% 定义全局变量
+global EV_params;   %电动汽车参数
+global BCS_params;  %充电站参数
+global MC_params;   %MC模拟参数
+global Behavious;   %用户行为
+global Algorithm;   %优化算法
+global Result;      %结果分析
+
+%% 初始化电动汽车参数（比亚迪 宋Pro DM-i 110KM）
+EV_params.Cap=18.3;          %电池容量（kWh）
+EV_params.NEDC=110;         %纯电续航里程（km）
+EV_params.Consumption=0;    %耗电量
+EV_params.minSOC=0.1;    %最小荷电状态
+EV_params.Expected_Time=0;  %预期充电时间
+EV_params.Expected_SOC=[];   %预期充电荷电状态
+
+%% 初始化充电站参数（广州特来电充电站-盛大国际特惠充电站）
+BCS_params.nPiles=10;                   %充电桩数量（个）
+BCS_params.DTF_PowerFactor=0.8;         %配电变压器负荷功率因数
+BCS_params.DTF_Cap=230*4/0.8/0.85;      %配电变压器额定容量（kW）(户数*每户用电量/功率因数/负荷率）
+BCS_params.RCP=7;                       %额定充电功率（kW）
+BCS_params.PowerFactor=0.9;             %充电负荷功率因数
+BCS_params.P=BCS_params.RCP*BCS_params.PowerFactor;   %实际充电功率（kW）
+%% 电价计算（南方电网）
+BCS_params.GPrice=[1.215 0.726 0.293];  %电网购电电价（峰平谷）
+BCS_params.TOU_EPrice_Hour=[
+    0.726 0.726 1.215 1.215 1.215 1.215 ...
+    1.215 0.726 0.726 0.726 0.726 0.726 ...
+    0.293 0.293 0.293 0.293 0.293 0.293 ...
+    0.293 0.293 0.726 0.726 1.215 1.215
+];  %分时电价（12点开始）（高峰时段为10-12点、14-19点；低谷时段为0-8点；其余时段为平段；峰平谷比价为1.7:1:0.38）
+BCS_params.TOU_EPrice_Min=zeros(1,96);  %分时段电价
+for i=1:95
+    BCS_params.TOU_EPrice_Min(i)=BCS_params.TOU_EPrice_Hour(floor(i/4)+1);
+    if floor((i-1)/4)<floor(i/4)
+       BCS_params.TOU_EPrice_Min(i)=BCS_params.TOU_EPrice_Hour(floor(i/4));    
+    end
+end
+BCS_params.TOU_EPrice_Min(96)=BCS_params.TOU_EPrice_Hour(24);
+BCS_params.EPrice=1.72;  %充电电价（元）
+
+%% 初始化MC模拟参数
+MC_params.all_day=1;            %模拟天数
+MC_params.periods_per_day=96;   %一天划分为若干时段数
+MC_params.periods_Hour=0.25;
+MC_params.periods_Min=15;
+MC_params.nEVs=250;             %电动汽车数量
+MC_params.nEVs_Count=0;
+MC_params.nEVs_Count_ALL=0;
+MC_params.nEVs_Count_Time=zeros(1,MC_params.periods_per_day);
+MC_params.nEVs_StartTime=zeros(1,MC_params.nEVs);
+MC_params.nEVs_SOC=zeros(1,MC_params.nEVs);
+MC_params.nEVs_SOC_Time=zeros(MC_params.periods_per_day,MC_params.nEVs);
+MC_params.nEVs_EChargeTime=zeros(1,MC_params.nEVs);
+MC_params.J_max=0;              %最大时间段数
+MC_params.nEVs_No=0;            %电动汽车编号
+MC_params.nEVs_No_Count=0;      %电动汽车编号计数
+MC_params.Y=zeros(BCS_params.nPiles,1);
+MC_params.S=zeros(BCS_params.nPiles,MC_params.periods_per_day); %充电站状态矩阵
+MC_params.C=zeros(BCS_params.nPiles,MC_params.periods_per_day); %充电站状态矩阵
+MC_params.C_ALL=zeros(BCS_params.nPiles,MC_params.periods_per_day);
+MC_params.V0G_ChargeLoad=zeros(1,MC_params.periods_per_day*2);
+MC_params.ChargeLoad=zeros(1,MC_params.periods_per_day*2);
+MC_params.A=ones(MC_params.periods_per_day,1);
+MC_params.B=ones(1,MC_params.periods_per_day);
+
+%% 计算实际充电功率
+Behavious.ConventionalLoad_Hour=[
+    1426.39 1445.58 1426.39 1416.39 1426.39 1491.22 ...
+    1512.84 1523.64 1512.84 1426.39 1399.37 1275.10 ...
+    1188.66 1048.18 832.06 780.22 768.64 812.06 884.48 ...
+    1069.70 1170.66 1275.10 1404.78 1426.39 1426.39
+    ];  %从12点开始每小时常规负荷
+Behavious.ConventionalLoad_Hour=BCS_params.DTF_PowerFactor*Behavious.ConventionalLoad_Hour; %实际常规负荷
+BCS_params.CP_TFCap_ratio=zeros(1,96);  %充电功率占变压器容量的比例
+for i=1:MC_params.periods_per_day   %24小时局部线性化为96个时段
+    Behavious.FirstConventionalLoad=Behavious.ConventionalLoad_Hour(floor((i-1)/4)+1)/BCS_params.DTF_Cap;
+    Behavious.SecondConventionalLoad=Behavious.ConventionalLoad_Hour(floor((i-1)/4)+2)/BCS_params.DTF_Cap;
+    if(rem(i,4)==1)
+    BCS_params.CP_TFCap_ratio(i)=Behavious.ConventionalLoad_Hour(floor((i-1)/4)+1)/BCS_params.DTF_Cap;
+    elseif(rem(i,4)==2)
+         BCS_params.CP_TFCap_ratio(i)=Behavious.FirstConventionalLoad+(Behavious.SecondConventionalLoad-Behavious.FirstConventionalLoad)/4;
+    elseif(rem(i,4)==3)
+        BCS_params.CP_TFCap_ratio(i)=Behavious.FirstConventionalLoad+2*(Behavious.SecondConventionalLoad-Behavious.FirstConventionalLoad)/4;
+    else
+        BCS_params.CP_TFCap_ratio(i)=Behavious.FirstConventionalLoad+3*(Behavious.SecondConventionalLoad-Behavious.FirstConventionalLoad)/4;
+    end
+end
+Behavious.ConventionalLoad_Min=BCS_params.DTF_Cap*BCS_params.CP_TFCap_ratio;  %96时段常规负荷
+Behavious.CP_max=(BCS_params.DTF_Cap*MC_params.B-Behavious.ConventionalLoad_Min)*BCS_params.DTF_PowerFactor;     %实际最大充电负荷
+
+%% 电动汽车MC模拟
+for t=1:MC_params.periods_per_day   %从中午12点开始计算(从第50个时段开始计算), 12.25为第一个时间段
+    Behavious.StartTime=12.25+0.25*(t-1);
+    % 起始充电时间与车辆数的MC模拟
+    if Behavious.StartTime>24
+        Behavious.StartTime=Behavious.StartTime-24;
+    end
+    Behavious.StartTime_us=17.6;    %起始充电时间概率密度函数期望
+    Behavious.StartTime_ds=3.4;     %起始充电时间概率密度函数标准差
+    %起始充电时间概率密度函数
+    if Behavious.StartTime>(Behavious.StartTime_us-12)
+        Behavious.StartTime_fs=@(x)1/(Behavious.StartTime_ds*(2*pi)^0.5).*exp(-(x-Behavious.StartTime_us).^2./(2*Behavious.StartTime_ds^2)); %(us-12)<x<=24
+    else
+        Behavious.StartTime_fs=@(x)1/(Behavious.StartTime_ds*(2*pi)^0.5).*exp(-(x+24-Behavious.StartTime_us).^2./(2*Behavious.StartTime_ds^2)); %0<x<=(us-12)
+    end
+    Behavious.s_ts=integral(Behavious.StartTime_fs,Behavious.StartTime-0.25,Behavious.StartTime);  %0.25小时时段内的概率
+    MC_params.nEVs_Count=round(Behavious.s_ts*MC_params.nEVs);  %该时段接入的电动汽车数量
+    MC_params.nEVs_Count_Time(t)=MC_params.nEVs_Count;
+    MC_params.nEVs_Count_ALL=MC_params.nEVs_Count_ALL+MC_params.nEVs_Count;
+
+    for i=1:MC_params.nEVs_Count
+        %% 初始SOC的MC模拟
+        Behavious.StartSOC_ud=3.2;      %初始SOC概率密度函数期望
+        Behavious.StartSOC_dd=0.88;     %初始SOC概率密度函数标准差
+        %初始SOC概率密度函数
+        Behavious.StartSOC=0.9-15*lognrnd(Behavious.StartSOC_ud,Behavious.StartSOC_dd)/(100*EV_params.Cap);
+        while Behavious.StartSOC<0.1 || Behavious.StartSOC>=0.3
+            Behavious.StartSOC=0.9-15*lognrnd(Behavious.StartSOC_ud,Behavious.StartSOC_dd)/(100*EV_params.Cap);
+        end
+        Behavious.StartSOC=fix(Behavious.StartSOC*100)/100;
+        % 预期充电时间时间的MC模拟
+        %预期充电时间概率密度函数
+        Behavious.EChargeTime_Hour=2+6*rand(1);
+        while Behavious.EChargeTime_Hour>=8 || Behavious.EChargeTime_Hour<=2
+            Behavious.EChargeTime_Hour=8*rand(1);
+        end
+        Behavious.EChargeTime_Min=ceil((Behavious.EChargeTime_Hour*60)/15);
+        %判断是否能在预定充电时间内达到所需最终荷电状态
+%         if (0.25*Behavious.EChargeTime_Min*BCS_params.P>((0.9-Behavious.StartSOC)*EV_params.Cap))
+            MC_params.nEVs_No=MC_params.nEVs_No+1;
+            MC_params.nEVs_StartTime(1,MC_params.nEVs_No_Count+MC_params.nEVs_No)=t;
+            MC_params.nEVs_SOC(1,MC_params.nEVs_No_Count+MC_params.nEVs_No)=Behavious.StartSOC;
+            MC_params.nEVs_Consumption(t,MC_params.nEVs_No_Count+MC_params.nEVs_No)=(1-Behavious.StartSOC)*EV_params.Cap;
+            MC_params.nEVs_EChargeTime(1,MC_params.nEVs_No_Count+MC_params.nEVs_No)=Behavious.EChargeTime_Min;
+%         end
+    end
+    MC_params.nEVs_No_Count=MC_params.nEVs_No_Count+MC_params.nEVs_No;
+    MC_params.nEVs_No=0;
+end
+
+MC_params.nEVs_StartTime((MC_params.nEVs_No_Count+1):MC_params.nEVs)=[];
+MC_params.nEVs_SOC((MC_params.nEVs_No_Count+1):MC_params.nEVs)=[];
+MC_params.nEVs_SOC_Time(:,(MC_params.nEVs_No_Count+1):MC_params.nEVs)=[];
+MC_params.nEVs_EChargeTime((MC_params.nEVs_No_Count+1):MC_params.nEVs)=[];
+
+MC_params.nEVs_CSOC_min=0.9*ones(MC_params.nEVs_No_Count,1);
+MC_params.nEVs_CSOC_max=ones(MC_params.nEVs_No_Count,1);
+
+%% 无序充电负荷曲线
+MC_params.nEVs_Consumption_Time=sum(MC_params.nEVs_Consumption,2)';         %各时段总电动汽车耗电量
+MC_params.nEVs_ChargeTime=sum(MC_params.nEVs_Consumption)./BCS_params.P;    %各电动汽车充电时间
+MC_params.nEVs_ChargeTime=ceil((MC_params.nEVs_ChargeTime*60)/15);          %24小时转换成15分钟
+for i=1:MC_params.nEVs_No_Count
+    if MC_params.nEVs_StartTime(i)==0
+        MC_params.nEVs_StartTime(i)=MC_params.periods_per_day;
+    end
+    MC_params.ChargeLoad(MC_params.nEVs_StartTime(i):MC_params.nEVs_StartTime(i)+MC_params.nEVs_ChargeTime(i))=BCS_params.RCP;
+    MC_params.V0G_ChargeLoad=MC_params.V0G_ChargeLoad+MC_params.ChargeLoad;
+    MC_params.ChargeLoad=zeros(1,MC_params.periods_per_day*2);
+end
+for t=1:MC_params.periods_per_day
+    if MC_params.V0G_ChargeLoad(t)>=BCS_params.nPiles*BCS_params.RCP*2
+        MC_params.V0G_ChargeLoad(t)=BCS_params.nPiles*BCS_params.RCP*2;
+    end
+end
+MC_params.V0G_ChargeLoad=MC_params.V0G_ChargeLoad(1:96)+MC_params.V0G_ChargeLoad(97:192);   %电动汽车无序充电负荷
+
+%% 充电站有序充电模拟
+tic
+for t=1:MC_params.periods_per_day
+    % 预更新充电站汽车充电状态
+    MC_params.S(:,1)=0;
+    MC_params.S=circshift(MC_params.S,-1,2);
+    % 预更新充电站汽车控制策略
+    MC_params.C(:,1)=0;
+    MC_params.C=circshift(MC_params.C,-1,2);
+    % 判断是否有新车接入
+    MC_params.EV_index=find(MC_params.nEVs_StartTime==t);
+    if ~isempty(MC_params.EV_index)
+        % 记录电动汽车SOC和预期充电时间
+        MC_params.EV_Count=numel(MC_params.EV_index);
+        MC_params.EV_SOC=MC_params.nEVs_SOC(MC_params.EV_index);
+        MC_params.EV_EChargeTime=MC_params.nEVs_EChargeTime(MC_params.EV_index);
+        % 确定控制时间段数
+        MC_params.J_max=max([MC_params.EV_EChargeTime,MC_params.J_max]);
+        % 更新充电站状态方程
+        for n=1:BCS_params.nPiles
+            if MC_params.S(n,1)==0
+                MC_params.S(n,1:MC_params.EV_EChargeTime(MC_params.EV_Count))=1;
+                MC_params.Y(n,1)=MC_params.EV_SOC(MC_params.EV_Count);
+                MC_params.EV_Count=MC_params.EV_Count-1;
+            end
+            if MC_params.EV_Count==0
+                break;
+            end
+        end
+        % 更新充电桩对应电动汽车SOC数据
+        for n=1:BCS_params.nPiles
+            if MC_params.S(n,1)==0
+                MC_params.Y(n,1)=0;
+            end
+        end
+        MC_params.SC=MC_params.S(:,1:MC_params.J_max);
+        % 优化策略
+        yalmip('clear');
+        % 定义矩阵
+        MC_params.X=sdpvar(BCS_params.nPiles,MC_params.J_max);
+        % 约束条件
+        Algorithm.Constraints=[];
+        for j=1:MC_params.J_max
+            if (t+j-1)<=MC_params.periods_per_day
+                Algorithm.Constraints=[Algorithm.Constraints,(BCS_params.RCP*sum(MC_params.X(:,j).*MC_params.SC(:,j)))<=(Behavious.CP_max(t+j-1))];
+            else
+                Algorithm.Constraints=[Algorithm.Constraints,(BCS_params.RCP*sum(MC_params.X(:,j).*MC_params.SC(:,j)))<=(Behavious.CP_max(t+j-1-96))];
+            end
+        end
+        for n=1:BCS_params.nPiles
+            if MC_params.Y(n,1)~=0
+                Algorithm.Constraints=[Algorithm.Constraints,(BCS_params.P*MC_params.periods_Hour*sum(MC_params.X(n,:).*MC_params.SC(n,:))+EV_params.Cap*MC_params.Y(n,1))>=EV_params.Cap*MC_params.nEVs_CSOC_min];
+                Algorithm.Constraints=[Algorithm.Constraints,(BCS_params.P*MC_params.periods_Hour*sum(MC_params.X(n,:).*MC_params.SC(n,:))+EV_params.Cap*MC_params.Y(n,1))<=EV_params.Cap*MC_params.nEVs_CSOC_max];
+            end
+        end
+        % 定义对象
+        Algorithm.Objective=BCS_params.RCP*MC_params.periods_Hour*sum(sum(MC_params.X.*MC_params.SC).*(BCS_params.EPrice-BCS_params.TOU_EPrice_Min(t)));
+        % 为YALMIP求解器设置选项
+        Algorithm.options = sdpsettings('solver','cplex','verbose',1);
+        % 优化模型
+        Algorithm.sol = optimize(Algorithm.Constraints,Algorithm.Objective,Algorithm.options);
+        % 分析错误
+        if Algorithm.sol.problem == 0
+            Algorithm.solution = double(MC_params.S);
+        else
+            Algorithm.solution = double(MC_params.S);
+            disp('Hmm, something went wrong!');
+            sol.info
+            yalmiperror(sol.problem)
+        end
+        MC_params.C=Algorithm.solution;
+    end
+    MC_params.EV_index=[];
+    MC_params.C_ALL(:,t)=MC_params.C(:,1);
+end
+toc
+
+%% 数据分析
+Result.xaxis=0:0.25:23.75;
+Result.TOU_EPrice=BCS_params.TOU_EPrice_Min;                %分时电价
+Result.EPrice=BCS_params.EPrice*MC_params.B;                %充电电价
+Result.ConventionalLoad=Behavious.ConventionalLoad_Min;     %常规负荷
+Result.nEVs_Count=MC_params.nEVs_Count_Time;                %各时段接入车辆数
+Result.nEVs_StartTime=MC_params.nEVs_StartTime;             %起始充电时间
+Result.nEVs_SOC=MC_params.nEVs_SOC;                         %初始SOC
+Result.nEVs_EChargeTime=MC_params.nEVs_EChargeTime;         %预期停留时间
+Result.DTF_Cap=BCS_params.DTF_Cap*MC_params.B;              %配电变压器额定容量
+Result.CP_max=Behavious.CP_max;                             %实际最大充电负荷
+Result.V0G_ChargeLoad=MC_params.V0G_ChargeLoad;
+Result.V0G_Load_ALL=Behavious.ConventionalLoad_Min+Result.V0G_ChargeLoad;
+Result.C=sum(MC_params.C_ALL);
+Result.V1G_ChargeLoad=BCS_params.P*Result.C;
+Result.V1G_Load_ALL=Behavious.ConventionalLoad_Min+Result.V1G_ChargeLoad;
+
+tiledlayout(2,2)
+% 变电站购电电价与充点电价曲线
+nexttile
+hold on
+title("变电站购电电价与充点电价曲线")
+stairs(Result.xaxis,Result.TOU_EPrice,'LineWidth',2,'Color',[0 0 0]);
+stairs(Result.xaxis,Result.EPrice,'LineWidth',2,'Color',[1 0 0]);
+set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
+set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
+xlabel('Time/h');
+ylabel('Price/￥');
+legend('TOU Electricity Price','Charging Price');
+hold off
+% 各时段充电站接入电动汽车数量
+nexttile
+hold on
+title("各时段充电站接入电动汽车数量")
+stairs(Result.xaxis,Result.nEVs_Count,'LineWidth',2,'Color',[0 0 0]);
+set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
+set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
+xlabel('Time/h');
+ylabel('Count');
+legend('Count of EV');
+hold off
+% 有序充电与无序充电负荷曲线
+nexttile
+hold on
+title("有序充电与无序充电负荷曲线")
+plot(Result.xaxis,Result.CP_max,'LineWidth',2,'Color',[1 0 0]);
+plot(Result.xaxis,Result.V0G_ChargeLoad,'LineWidth',2,'Color',[0 0 1]);
+plot(Result.xaxis,Result.V1G_ChargeLoad,'LineWidth',2,'Color',[0 1 0]);
+set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
+set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
+xlabel('Time/h');
+ylabel('Load/kW');
+legend('Max Charge Load','V0G Charge Load','V1G Charge Load');
+hold off
+% 总负荷曲线
+nexttile
+hold on
+title("总负荷曲线")
+plot(Result.xaxis,Result.DTF_Cap,'LineWidth',2,'Color',[1 0 0]);
+plot(Result.xaxis,Result.ConventionalLoad,'LineWidth',2,'Color',[0 0 0]);
+plot(Result.xaxis,Result.V0G_Load_ALL,'LineWidth',2,'Color',[0 0 1]);
+plot(Result.xaxis,Result.V1G_Load_ALL,'LineWidth',2,'Color',[0 1 0]);
+set(gca, 'XTick', [0 2 4 6 8 10 12 14 16 18 20 22 24]);
+set(gca, 'XTickLabel', {'12:00','14:00','16:00','18:00','20:00','22:00','24:00','02:00','04:00','06:00','08:00','10:00','12:00'});
+xlabel('Time/h');
+ylabel('Load/kW');
+legend('Capacity of DTF','Conventional Load','V0G Load','V1G Load');
+hold off
+
