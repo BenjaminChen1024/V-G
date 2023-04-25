@@ -16,7 +16,7 @@ EV_params.Expected_Time=0;  %预期充电时间
 EV_params.Expected_SOC=[];   %预期充电荷电状态
 
 %% 初始化充电站参数（广州特来电充电站-盛大国际特惠充电站）
-BCS_params.nPiles=20;                   %充电桩数量（个）
+BCS_params.nPiles=100;                   %充电桩数量（个）
 BCS_params.DTF_PowerFactor=0.8;         %配电变压器负荷功率因数
 BCS_params.DTF_Cap=200*5/0.8/0.85;      %配电变压器额定容量（kW）(户数*每户用电量/功率因数/负荷率）
 BCS_params.RCP=7;                       %额定充电功率（kW）
